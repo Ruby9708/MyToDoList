@@ -191,6 +191,10 @@ function listenToUserLists(userEmail) {
   );
 
   unsubscribeLists = onSnapshot(listsQuery, async (snapshot) => {
+    // 成功讀取，隱藏權限警告
+    const permAlert = document.getElementById("firestore-permission-alert");
+    if (permAlert) permAlert.classList.add("hidden");
+
     currentLists = [];
     snapshot.forEach((docSnap) => {
       currentLists.push({ id: docSnap.id, ...docSnap.data() });
@@ -218,7 +222,9 @@ function listenToUserLists(userEmail) {
     lucide.createIcons();
   }, (error) => {
     console.error("監聽清單列表失敗：", error);
-    showToast("載入清單失敗，請檢查 Firestore 權限", "error");
+    const permAlert = document.getElementById("firestore-permission-alert");
+    if (permAlert) permAlert.classList.remove("hidden");
+    showToast("載入清單失敗，請確認 Firestore 規則已發布", "error");
   });
 }
 
@@ -268,6 +274,8 @@ async function createInitialList() {
     });
   } catch (e) {
     console.error("建立預設清單失敗：", e);
+    const permAlert = document.getElementById("firestore-permission-alert");
+    if (permAlert) permAlert.classList.remove("hidden");
   }
 }
 
@@ -276,10 +284,23 @@ async function handleCreateList(e) {
   e.preventDefault();
   const nameInput = document.getElementById("input-newlist-name");
   const descInput = document.getElementById("input-newlist-desc");
+  const submitBtn = document.getElementById("btn-submit-create-list");
+  const errorMsgDiv = document.getElementById("create-list-error-msg");
+  
+  if (errorMsgDiv) {
+    errorMsgDiv.classList.add("hidden");
+    errorMsgDiv.innerHTML = "";
+  }
+
   const name = nameInput.value.trim();
   const description = descInput.value.trim();
 
   if (!name) return;
+
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = "建立中...";
+  }
 
   try {
     const listRef = await addDoc(collection(db, "lists"), {
@@ -309,7 +330,21 @@ async function handleCreateList(e) {
     showToast(`成功建立清單「${name}」！`, "success");
   } catch (error) {
     console.error("建立清單失敗：", error);
+    let userFriendlyMsg = `建立失敗：${error.message}`;
+    if (error.code === "permission-denied" || error.message.includes("permission")) {
+      userFriendlyMsg = `<b>⚠️ 權限不足 (PERMISSION_DENIED)</b><br>
+        Firestore 資料庫目前拒絕寫入。請前往 Firebase Console > Firestore Database >「規則 (Rules)」，設定為允許登入使用者讀寫後發布。`;
+    }
+    if (errorMsgDiv) {
+      errorMsgDiv.innerHTML = userFriendlyMsg;
+      errorMsgDiv.classList.remove("hidden");
+    }
     showToast("建立清單失敗：" + error.message, "error");
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "建立清單";
+    }
   }
 }
 
@@ -861,6 +896,14 @@ function closeModals() {
 
 // ====== 事件監聽初始化 ======
 function bindEventListeners() {
+  // 權限規則說明按鈕
+  const guideBtn = document.getElementById("btn-show-rules-guide");
+  if (guideBtn) {
+    guideBtn.addEventListener("click", () => {
+      alert("【Firestore 規則設定步驟】\n\n1. 前往 Firebase Console 進入「my-to-do-list-1d256」\n2. 點擊左側選單的「Firestore Database」\n3. 點選「規則 (Rules)」標籤頁\n4. 將規則改為：\n\nrules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    match /{document=**} {\n      allow read, write: if request.auth != null;\n    }\n  }\n}\n\n5. 點擊「發布 (Publish)」即可正常讀寫！");
+    });
+  }
+
   // 登入 & 登出
   document.getElementById("btn-google-login").addEventListener("click", handleGoogleLogin);
   document.getElementById("btn-sign-out").addEventListener("click", handleSignOut);

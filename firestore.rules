@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 使用者資訊集合
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // 清單集合
+    match /lists/{listId} {
+      // 只要是清單的成員或擁有者，或是知道邀請碼加入者
+      allow read: if request.auth != null && (
+        resource.data.ownerId == request.auth.uid ||
+        resource.data.members.hasAny([request.auth.token.email]) ||
+        resource == null
+      );
+      
+      allow create: if request.auth != null;
+      
+      allow update: if request.auth != null && (
+        resource.data.ownerId == request.auth.uid ||
+        resource.data.members.hasAny([request.auth.token.email]) ||
+        // 允許以邀請碼加入
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'memberDetails', 'updatedAt'])
+      );
+      
+      allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+      
+      // 清單內的待辦事項子集合
+      match /todos/{todoId} {
+        allow read, write: if request.auth != null;
+      }
+    }
+  }
+}

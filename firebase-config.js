@@ -17,7 +17,13 @@ export function getFirebaseConfig() {
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
-      if (parsed.projectId) return parsed;
+      if (parsed.projectId) {
+        // 若 localStorage 內無有效 apiKey，則繼承預設的金鑰
+        if (!parsed.apiKey || parsed.apiKey === "AIzaSy_YOUR_API_KEY_HERE") {
+          parsed.apiKey = defaultFirebaseConfig.apiKey;
+        }
+        return parsed;
+      }
     } catch (e) {
       console.warn("解析 localStorage Firebase 設定失敗，改用預設設定", e);
     }

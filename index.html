@@ -143,6 +143,15 @@
     <!-- 右側主要待辦事項工作區 -->
     <main class="flex-1 flex flex-col bg-slate-50 overflow-hidden">
       
+      <!-- 權限警告橫條 (預設隱藏) -->
+      <div id="firestore-permission-alert" class="hidden bg-amber-500 text-white px-6 py-2.5 text-xs flex items-center justify-between shadow-sm">
+        <div class="flex items-center gap-2">
+          <i data-lucide="alert-triangle" class="w-4 h-4 flex-shrink-0"></i>
+          <span><b>Firestore 權限提醒：</b>目前資料庫安全性規則尚未開放，請至 Firebase Console 將 Rules 設為允許讀寫。</span>
+        </div>
+        <button id="btn-show-rules-guide" class="underline hover:text-amber-100 font-semibold ml-4 flex-shrink-0">查看規則與解決步驟</button>
+      </div>
+
       <!-- 頂部清單詳情與協作者橫條 -->
       <header class="bg-white border-b border-slate-200 px-6 py-4 flex flex-wrap items-center justify-between gap-4">
         <div>
@@ -332,9 +341,10 @@
           <label class="block font-semibold text-slate-700 mb-1">簡介說明 (選填)</label>
           <textarea id="input-newlist-desc" rows="2" placeholder="簡述此清單的目的..." class="w-full px-3 py-2 border border-slate-200 rounded-lg"></textarea>
         </div>
+        <div id="create-list-error-msg" class="hidden text-xs text-rose-600 bg-rose-50 border border-rose-200 p-2.5 rounded-lg space-y-1"></div>
         <div class="pt-3 flex justify-end gap-2">
           <button type="button" class="modal-close px-4 py-2 font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">取消</button>
-          <button type="submit" class="px-4 py-2 font-semibold bg-brand-600 hover:bg-brand-700 text-white rounded-lg shadow">建立清單</button>
+          <button type="submit" id="btn-submit-create-list" class="px-4 py-2 font-semibold bg-brand-600 hover:bg-brand-700 text-white rounded-lg shadow">建立清單</button>
         </div>
       </form>
     </div>
